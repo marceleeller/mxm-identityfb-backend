@@ -6,7 +6,7 @@ namespace MxmIdentityfbBackend.Domain.Profiles;
 
 public class UserProfile : Profile
 {
-    protected UserProfile()
+    public UserProfile()
     {
         CreateMap<UserRegisterDto, User>();
     }
