@@ -1,5 +1,7 @@
-﻿using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using MxmIdentityfbBackend.Domain.Models;
+using MxmIdentityfbBackend.Helpers;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -10,10 +12,12 @@ public class TokenService
 {
 
     private IConfiguration _configuration;
+    private AppSettings _applicationSettings;
 
-    public TokenService(IConfiguration configuration)
+    public TokenService(IConfiguration configuration, IOptions<AppSettings> applicationSettings)
     {
         _configuration = configuration;
+        _applicationSettings = applicationSettings.Value;
     }
 
     public string GenerateToken(User user)
@@ -26,7 +30,7 @@ public class TokenService
             new("loginTimeStamp", DateTime.UtcNow.ToString())
         };
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("efd1290u12u2109u2hno120j01m12hef"));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_applicationSettings.Secret));
 
         var loginCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

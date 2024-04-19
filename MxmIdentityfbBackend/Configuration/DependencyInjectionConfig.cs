@@ -9,6 +9,7 @@ public static class DependencyInjectionConfig
     {
         services.AddScoped<AuthService>();
         services.AddScoped<TokenService>();
+        services.AddScoped<RandomPasswordService>();
 
         return services;
     }
