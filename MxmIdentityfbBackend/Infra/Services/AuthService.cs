@@ -33,12 +33,12 @@ public class AuthService
 
     public async Task<UserTokenResponseDto> Login(UserLoginDto userLoginDto)
     {
-        var signInResult = await _signInManager.PasswordSignInAsync(userLoginDto.UserName, userLoginDto.Password, false, false);
+        var signInResult = await _signInManager.PasswordSignInAsync(userLoginDto.Email, userLoginDto.Password, false, false);
 
-        if(!signInResult.Succeeded)
-            throw new Exception("Falha ao logar usuario");
-
-        var user = await _userManager.Users.FirstAsync(user => user.NormalizedUserName.Equals(userLoginDto.UserName.ToUpper()));
+        if (!signInResult.Succeeded)
+            throw new Exception("Failed to login.");
+            
+        var user = await _userManager.Users.FirstAsync(user => user.NormalizedEmail.Equals(userLoginDto.Email.ToUpper()));
 
         return new UserTokenResponseDto()
         {
@@ -56,7 +56,7 @@ public class AuthService
 
         //check if access token is valid
         if (userOBJK.Data.IsValid == false)
-            throw new Exception("Falha ao logar usuario");
+            throw new Exception("Failed to login.");
 
         //get user info
         HttpResponseMessage meResponse = await _httpClient
@@ -69,8 +69,9 @@ public class AuthService
         if (user == null)
         {
             var randomPassword = _randomPasswordService.GenerateRandomPassword();
-            var userRegister = new UserRegisterDto { UserName = userContentObj.Email, Email = userContentObj.Email, FirstName = userContentObj.first_name, LastName = userContentObj.last_name, Password = randomPassword, PasswordConfirmation = randomPassword };
+            var userRegister = new UserRegisterDto { Email = userContentObj.Email, FirstName = userContentObj.first_name, LastName = userContentObj.last_name, Password = randomPassword, PasswordConfirmation = randomPassword };
             user = _mapper.Map<User>(userRegister);
+            user.UserName = userRegister.Email;
 
             // register user
             await _userManager.CreateAsync(user, randomPassword);
@@ -89,14 +90,14 @@ public class AuthService
     {
 
         var user = _mapper.Map<User>(userRegisterDto);
+        user.UserName = userRegisterDto.Email;
         var result = await _userManager.CreateAsync(user, userRegisterDto.Password);
 
         if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => $"{e.Code}: {e.Description}"));
-            throw new Exception($"Falha ao cadastrar usuario. Errors: {errors}");
+            throw new Exception($"Failed to register user. Errors: {errors}");
         }
-            
 
         return user;
     }

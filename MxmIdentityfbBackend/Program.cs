@@ -8,6 +8,7 @@ using MxmIdentityfbBackend.Configuration;
 using MxmIdentityfbBackend.Domain.Context;
 using MxmIdentityfbBackend.Domain.Models;
 using MxmIdentityfbBackend.Helpers;
+using System.Reflection;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -46,6 +47,9 @@ builder.Services.AddSwaggerGen(c =>
     new List<string>()
     }
     });
+
+    var xmlFileName = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFileName));
 });
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
