@@ -2,19 +2,16 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MxmIdentityfbBackend.Configuration;
 using MxmIdentityfbBackend.Domain.Context;
 using MxmIdentityfbBackend.Domain.Models;
-using MxmIdentityfbBackend.Infra.Services;
-using System;
-using System.Reflection;
+using MxmIdentityfbBackend.Helpers;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+ConfigurationManager configuration = builder.Configuration;
 
 // Add services to the container.
 
@@ -49,9 +46,6 @@ builder.Services.AddSwaggerGen(c =>
     new List<string>()
     }
     });
-
-    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
 });
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -62,18 +56,24 @@ builder.Services.AddDbContext<UsersDbContext>(options =>
     options.UseSqlite(defaultConnectionString));
 
 builder.Services
-    .AddIdentity<User, IdentityRole>()
+    .AddIdentity<User, IdentityRole>(options =>
+    {
+        options.User.RequireUniqueEmail = true;
+    })
     .AddEntityFrameworkStores<UsersDbContext>()
     .AddDefaultTokenProviders();
+
 
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddJwtBearer(options => {
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters()
     {
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("efd1290u12u2109u2hno120j01m12hef")),
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["ApplicationSettings:Secret"])),
         ClockSkew = TimeSpan.Zero,
         ValidateIssuer = false,
         ValidateAudience = false
@@ -88,8 +88,24 @@ builder.Services.AddAuthorization(auth =>
         .Build());
 });
 
+builder.Services.AddCors(opt =>
+{
+    opt.AddPolicy(name: "CorsPolicy", builder =>
+    {
+        builder.WithOrigins("http://localhost:4200", "https://localhost:4200", "http://localhost:5237", "https://localhost:7245")
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
+
+    });
+});
+
 builder.Services.AddDependencyInjection();
 builder.Services.AddHttpClient();
+
+
+builder.Services.Configure<AppSettings>(
+    builder.Configuration.GetSection("ApplicationSettings"));
 
 var app = builder.Build();
 
@@ -100,10 +116,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors(policy =>
-    policy.AllowAnyOrigin()
-          .AllowAnyHeader()
-          .AllowAnyMethod());
+app.UseCors("CorsPolicy");
 
 app.UseHttpsRedirection();
 

@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using MxmIdentityfbBackend.Domain.Dtos;
 using MxmIdentityfbBackend.Domain.Models;
+using MxmIdentityfbBackend.Helpers;
 using MxmIdentityfbBackend.Infra.Services;
 using Newtonsoft.Json;
+using System.Net.Http;
 
 namespace MxmIdentityfbBackend.Controllers;
 [Route("api/auth")]
@@ -14,14 +16,11 @@ namespace MxmIdentityfbBackend.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly AuthService _authService;
-    private readonly AppSettings _applicationSettings;
-    private readonly HttpClient _httpClient = new HttpClient();
 
-    public AuthController(AuthService userService, IOptions<AppSettings> applicationSettings, HttpClient httpClient)
+
+    public AuthController(AuthService userService)
     {
         _authService = userService;
-        _applicationSettings = applicationSettings.Value;
-        _httpClient = httpClient;
     }
 
     [HttpPost("register")]
@@ -45,20 +44,9 @@ public class AuthController : ControllerBase
     [HttpPost("loginWithFacebook")]
     public async Task<IActionResult> LoginWithFacebook([FromBody] string credential)
     {
-        HttpResponseMessage debugTokenResponse = await _httpClient
-            .GetAsync($"https://graph.facebook.com/debug_token?input_token={credential}&access_token={_applicationSettings.FacebookAppId}|{_applicationSettings.FacebookAppSecret}");
-
-        var stringThing = await debugTokenResponse.Content.ReadAsStringAsync();
-        var userOBJ = JsonConvert.DeserializeObject<FBUser>(stringThing);
-
-        if (userOBJ!.Data.IsValid == false)
-            return Unauthorized();
-
-        HttpResponseMessage meResponse = await _httpClient
-            .GetAsync($"https://graph.facebook.com/me?fields=first_name,last_name,email,id&access_token={credential}");
-        var userContent = await meResponse.Content.ReadAsStringAsync();
-        var userContentObj = JsonConvert.DeserializeObject<FBUserInfo>(userContent);
-
-        return Ok();
+        var tokenResponse = await _authService.LoginWithFacebook(credential);
+       
+        return Ok(tokenResponse);
+               
     }
 }
