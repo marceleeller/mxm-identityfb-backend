@@ -24,10 +24,10 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Register new user.
+    /// Registrar novo usuario.
     /// </summary>
-    /// <response code="201">Client successfully registered</response>
-    /// <response code="400">Failed to register user</response>
+    /// <response code="201">Usuario registrado com sucesso</response>
+    /// <response code="400">Falha ao registrar usuário</response>
     [HttpPost("register")]
     [ProducesResponseType(type: typeof(User), statusCode: StatusCodes.Status201Created)]
     [ProducesResponseType(type: typeof(string), statusCode: StatusCodes.Status400BadRequest)]
@@ -38,9 +38,9 @@ public class AuthController : ControllerBase
             var user = await _authService.Register(userRegisterDto);
 
             return CreatedAtAction(
-                nameof(UserController.GetUser), "Data",
+                nameof(UserController.GetUser), "User",
                 new { id = user.Id },
-                new { user, message = "Client successfully registered" }
+                new { user, message = "Usuario registrado com sucesso" }
             );
 
         } catch (Exception e)
@@ -51,10 +51,10 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Authenticate user.
+    /// Realizar o login de um usuário.
     /// </summary>
-    /// <response code="200">Login successful</response>
-    /// <response code="401">Failed to login</response>
+    /// <response code="200">Login realizado com sucesso</response>
+    /// <response code="401">Credenciais inválidas</response>
     [HttpPost("login")]
     [ProducesResponseType(type: typeof(UserTokenResponseDto), statusCode: StatusCodes.Status200OK)]
     [ProducesResponseType(type: typeof(string), statusCode: StatusCodes.Status401Unauthorized)]
@@ -64,7 +64,7 @@ public class AuthController : ControllerBase
         {
             var tokenResponse = await _authService.Login(userLoginDto);
 
-            return Ok(new { tokenResponse, message = "Login successful" });
+            return Ok(new { tokenResponse, message = "Login realizado com sucesso" });
 
         } catch (Exception e)
         {
@@ -74,10 +74,10 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Authenticate user with Facebook.
+    /// Realizar o login de um usuário usando Facebook
     /// </summary>
-    /// <response code="200">Login successful</response>
-    /// <response code="401">Failed to login</response>
+    /// <response code="200">Login realizado com sucesso</response>
+    /// <response code="401">Falha ao autenticar usuário</response>
     [HttpPost("loginWithFacebook")]
     public async Task<IActionResult> LoginWithFacebook([FromBody] string credential)
     {
@@ -86,11 +86,31 @@ public class AuthController : ControllerBase
         {
             var tokenResponse = await _authService.LoginWithFacebook(credential);
 
-            return Ok(new { tokenResponse, message = "Login successful" });
+            return Ok(new { tokenResponse, message = "Login realizado com sucesso" });
         } catch (Exception e)
         {
             return Unauthorized(e.Message);
         }
                
+    }
+
+    /// <summary>
+    /// Realizar o login de um usuário usando Google
+    /// </summary>
+    /// <response code="200">Login realizado com sucesso</response>
+    /// <response code="401">Falha ao autenticar usuário</response>
+    [HttpPost("loginWithGoogle")]
+    public async Task<IActionResult> LoginWithGoogle([FromBody] string credential)
+    {
+        try
+        {
+            var tokenResponse = await _authService.LoginWithGoogle(credential);
+
+            return Ok(new { tokenResponse, message = "Login realizado com sucesso" });
+        }
+        catch (Exception e)
+        {
+            return Unauthorized(e.Message);
+        }
     }
 }
