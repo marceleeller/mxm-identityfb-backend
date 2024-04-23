@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -36,7 +37,7 @@ public class AuthService
         var signInResult = await _signInManager.PasswordSignInAsync(userLoginDto.Email, userLoginDto.Password, false, false);
 
         if (!signInResult.Succeeded)
-            throw new Exception("Failed to login.");
+            throw new Exception("Credenciais inválidas.");
             
         var user = await _userManager.Users.FirstAsync(user => user.NormalizedEmail.Equals(userLoginDto.Email.ToUpper()));
 
@@ -56,7 +57,7 @@ public class AuthService
 
         //check if access token is valid
         if (userOBJK.Data.IsValid == false)
-            throw new Exception("Failed to login.");
+            throw new Exception("Falha ao autenticar usuário.");
 
         //get user info
         HttpResponseMessage meResponse = await _httpClient
@@ -86,6 +87,36 @@ public class AuthService
 
     }
 
+    public async Task<UserTokenResponseDto> LoginWithGoogle(string credential)
+    {
+        var settings = new GoogleJsonWebSignature.ValidationSettings()
+        {
+            Audience = new List<string> { this._applicationSettings.GoogleClientId }
+        };
+
+        var payload = await GoogleJsonWebSignature.ValidateAsync(credential, settings);
+
+        var user = await _userManager.FindByEmailAsync(payload.Email);
+
+        if (user == null)
+        {
+            var randomPassword = _randomPasswordService.GenerateRandomPassword();
+            var userRegister = new UserRegisterDto { Email = payload.Email, FirstName = payload.GivenName, LastName = payload.FamilyName, Password = randomPassword, PasswordConfirmation = randomPassword };
+            user = _mapper.Map<User>(userRegister);
+            user.UserName = userRegister.Email;
+
+            // register user
+            await _userManager.CreateAsync(user, randomPassword);
+        }
+
+        await _signInManager.SignInAsync(user, isPersistent: false);
+
+        return new UserTokenResponseDto()
+        {
+            Token = _tokenService.GenerateToken(user)
+        };
+    }
+
     public async Task<User> Register(UserRegisterDto userRegisterDto)
     {
 
@@ -95,8 +126,7 @@ public class AuthService
 
         if (!result.Succeeded)
         {
-            var errors = string.Join(", ", result.Errors.Select(e => $"{e.Code}: {e.Description}"));
-            throw new Exception($"Failed to register user. Errors: {errors}");
+            throw new Exception("Falha ao registrar usuário");
         }
 
         return user;

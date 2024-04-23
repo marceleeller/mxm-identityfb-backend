@@ -23,10 +23,10 @@ public class UserController : ControllerBase
     }
 
     /// <summary>
-    /// Return authenticated user.
+    /// Retorna o usuário autenticado.
     /// </summary>
-    /// <response code="200">User personal data</response>
-    /// <response code="401">User unauthorized</response>
+    /// <response code="200">Dados pessoais do usuario</response>
+    /// <response code="401">Usuário não autenticado</response>
     [HttpGet]
     [ProducesResponseType(type: typeof(UserResponseDto), statusCode: StatusCodes.Status200OK)]
     [ProducesResponseType(type: typeof(string), statusCode: StatusCodes.Status401Unauthorized)]

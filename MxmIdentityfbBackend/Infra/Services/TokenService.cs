@@ -35,7 +35,7 @@ public class TokenService
         var loginCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            expires: DateTime.Now.AddMinutes(1),
+            expires: DateTime.Now.AddMinutes(10),
             signingCredentials: loginCredentials,
             claims: claims
         );
